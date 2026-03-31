@@ -9,10 +9,13 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -21,6 +24,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Public
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -39,11 +45,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.country.data.Country
 import com.example.country.ui.theme.CountryTheme
 
@@ -53,20 +61,84 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             CountryTheme {
-                Scaffold(
-                    modifier = Modifier.fillMaxSize(),
-                    topBar = {
-                        CountryTopAppBar()
+                var showList by remember { mutableStateOf(false) }
+
+                if (showList) {
+                    Scaffold(
+                        modifier = Modifier.fillMaxSize(),
+                        topBar = {
+                            CountryTopAppBar()
+                        }
+                    ) { innerPadding ->
+                        CountryList(
+                            countries = getSampleCountries(),
+                            modifier = Modifier.padding(innerPadding)
+                        )
                     }
-                ) { innerPadding ->
-                    CountryList(
-                        countries = getSampleCountries(),
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                } else {
+                    WelcomeScreen(onStartClicked = { showList = true })
                 }
             }
         }
     }
+}
+
+@Composable
+fun WelcomeScreen(onStartClicked: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Bienvenue",
+            style = MaterialTheme.typography.displayLarge,
+            fontWeight = FontWeight.Bold,
+            fontSize = 64.sp
+        )
+        Spacer(modifier = Modifier.height(32.dp))
+        Button(
+            onClick = onStartClicked,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.Black,
+                contentColor = Color.White
+            ),
+            shape = MaterialTheme.shapes.medium,
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = "voir les pays",
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CountryTopAppBar(modifier: Modifier = Modifier) {
+    CenterAlignedTopAppBar(
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Public,
+                    contentDescription = null,
+                    modifier = Modifier.size(32.dp)
+                )
+                Spacer(modifier = Modifier.size(8.dp))
+                Text(
+                    text = "My Countrys",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        },
+        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+            containerColor = Color.White,
+            titleContentColor = Color.Black,
+        ),
+        modifier = modifier
+    )
 }
 
 @Composable
@@ -75,15 +147,14 @@ fun CountryItem(country: Country, modifier: Modifier = Modifier) {
 
     Card(
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = Color.Transparent
         ),
         modifier = modifier
-            .padding(vertical = 4.dp, horizontal = 8.dp)
+            .padding(vertical = 4.dp, horizontal = 16.dp)
             .clickable { expanded = !expanded }
     ) {
         Column(
             modifier = Modifier
-                .padding(12.dp)
                 .animateContentSize(
                     animationSpec = spring(
                         dampingRatio = Spring.DampingRatioMediumBouncy,
@@ -115,19 +186,18 @@ fun CountryItem(country: Country, modifier: Modifier = Modifier) {
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Capitale: ${country.capital}",
-                        style = MaterialTheme.typography.bodyMedium
+                        text = "${country.capital}/${country.code}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Gray
                     )
                 }
 
                 IconButton(onClick = { expanded = !expanded }) {
                     Icon(
                         imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                        contentDescription = if (expanded) {
-                            "Voir moins"
-                        } else {
-                            "Voir plus"
-                        }
+                        contentDescription = if (expanded) "Voir moins" else "Voir plus",
+                        modifier = Modifier.size(32.dp),
+                        tint = Color.Black
                     )
                 }
             }
@@ -145,10 +215,6 @@ fun CountryItem(country: Country, modifier: Modifier = Modifier) {
                         text = "Détails :",
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = "Code ISO: ${country.code}",
-                        style = MaterialTheme.typography.bodySmall
                     )
                     Text(
                         text = country.description,
@@ -215,28 +281,17 @@ fun getSampleCountries(): List<Country> {
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@Preview(showBackground = true)
 @Composable
-fun CountryTopAppBar(modifier: Modifier = Modifier) {
-    CenterAlignedTopAppBar(
-        title = {
-            Text(
-                text = "My Countrys",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
-            )
-        },
-        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        ),
-        modifier = modifier
-    )
+fun WelcomePreview() {
+    CountryTheme {
+        WelcomeScreen(onStartClicked = {})
+    }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun PreviewCountryList() {
+fun ListPreview() {
     CountryTheme {
         Scaffold(
             topBar = { CountryTopAppBar() }
